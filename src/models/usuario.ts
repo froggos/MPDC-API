@@ -1,29 +1,27 @@
-import { Db } from "mongodb";
+import { Collection, Db, WithId } from "mongodb";
 import Conexion from "../db/conexion";
 import { Login } from "../types/login.type";
 import jwt from 'jsonwebtoken';
 
 export default class Usuario {
-    private conexion: Conexion;
-    // private db: Db;
-
-    constructor() {
-        this.conexion = Conexion.getInstancia();
-    }
-
-    public autenticar = async (login: Login): Promise<any> => { 
+    
+    constructor() { }
+    
+    public autenticar = async (login: Login): Promise<any> => {
         try {
-            await this.conexion.conectar();
+            const conexion = await Conexion.getInstancia();
+            
+            const db: Db = await conexion.conectar();
 
-            const db: Db = this.conexion.obtenerDb;
+            const usuario: WithId<any> = await db.collection('usuario').find({
+                usuario: `${login.usuario}`
+            }).toArray();
 
-            console.log(db);
+            return usuario;
         } catch (error) {
             console.log(error);
 
             throw error;
-        } finally {
-            await this.conexion.cerrarConexion();
         }
     }
 

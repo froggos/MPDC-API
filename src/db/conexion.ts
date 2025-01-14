@@ -12,16 +12,17 @@ export default class Conexion {
 
     constructor() { }
 
-    public static getInstancia(): Conexion {
+    public static getInstancia = async (): Promise<Conexion> => {
         if (!Conexion.instancia) {
             Conexion.instancia = new Conexion;
+            await Conexion.instancia.conectar();
         }
 
         return Conexion.instancia;
     }
 
     public conectar = async (): Promise<Db> => {
-        if (Conexion.cliente) {
+        if (!Conexion.cliente) {
             try {
                 Conexion.cliente = new MongoClient(this.uri, { maxPoolSize: 10, });
 
@@ -50,21 +51,21 @@ export default class Conexion {
         }
     }
 
-    // public obtenerDb = (): Db => {
-    //     if (!this.db) {
-    //         throw new Error('no existe ninguna conexion.');
-    //     }
-
-    //     return this.db;
-    // }
-
-    get obtenerDb(): Db {
-        if (Conexion.db) {
+    public obtenerDb = (): Db => {
+        if (!Conexion.db) {
             throw new Error('no existe ninguna conexion.');
         }
 
-        return Conexion.db!;
+        return Conexion.db;
     }
+
+    // get obtenerDb(): Db {
+    //     if (Conexion.db) {
+    //         throw new Error('no existe ninguna conexion.');
+    //     }
+
+    //     return Conexion.db!;
+    // }
 
     public consulta = async (consulta: string, datos?: any[]): Promise<any> => { }
 }

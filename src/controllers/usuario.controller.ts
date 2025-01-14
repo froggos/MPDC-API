@@ -1,14 +1,13 @@
 import {Request, Response} from 'express';
 import Usuario from '../models/usuario';
 import { Login } from '../types/login.type';
-import { UsuarioT } from '../models/types/usuario.type';
 import bcrypt from 'bcrypt';
 
 export default class UsuarioController {
     private usuario: Usuario;
 
     constructor() {
-        this.usuario = new Usuario;
+        this.usuario = new Usuario();
     }
 
     public login = async (req: Request, res: Response) => {
@@ -16,7 +15,7 @@ export default class UsuarioController {
         
         try {
             const data = await this.usuario.autenticar({
-                run: body.run,
+                usuario: body.usuario,
                 clave: body.clave,
             });
 
@@ -27,36 +26,27 @@ export default class UsuarioController {
                 return;
             }
 
-            if (!bcrypt.compareSync(body.clave, data[0].clave)) {
+            if (!bcrypt.compareSync(body.clave, data[0].pass_hash)) {
                 res.status(404).json({
                     mensaje: 'Usuario o contraseña incorrecta.'
                 });
                 return;
-            } 
+            }
 
             const token: string = Usuario._generarToken({
-                nombres: data[0].nombres,
-                apellido_paterno: data[0].apellido_paterno,
-                apellido_materno: data[0].apellido_materno,
-                correo: data[0].correo,
+                nombre  : data[0].perfil.nombre,
+                apellido: data[0].perfil.apellido,
+                correo  : data[0].correo,
             });
 
             res.status(200).json({
-                id: data[0].id_usuario,
-                nombres: data[0].nombres,
-                apellido_paterno: data[0].apellido_paterno,
-                apellido_materno: data[0].apellido_materno,
-                correo: data[0].correo,
-                perfil: {
-                    id: data[0].id_perfil,
-                    tipo: data[0].perfil,
-                },
-                estado: {
-                    id: data[0].id_estado_usuario,
-                    estado: data[0].estado_usuario,
-                },
-                token: token
-            } as UsuarioT);
+                id      : data[0]._id,
+                nombre  : data[0].perfil.nombre,
+                apellido: data[0].perfil.apellido,
+                correo  : data[0].perfil.correo,
+                estado  : data[0].estado,
+                token   : token
+            });
         } catch (error) {
             console.error(error);
 

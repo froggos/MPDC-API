@@ -1,4 +1,4 @@
 export interface Login {
-    run  : string;
-    clave: string;
+    usuario: string;
+    clave  : string;
 }

@@ -5,12 +5,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsDoc from 'swagger-jsdoc';
 
 import { createServer, Server as HttpServer } from 'http';
-import { routePer } from '../routes/perfil.route';
-import { routeCate } from '../routes/categoria.route';
 import { routeUsu } from '../routes/usuario.route';
-import Conexion from '../db/conexion';
-import { routeOrden } from '../routes/orden.route';
-
 
 env.config({
     path: ".env"
@@ -19,7 +14,6 @@ env.config({
 export default class Server {
     private app: Application;
     private server: HttpServer;
-    private con: Conexion;
     private rutas: any;
 
     private swaggerOptions: {} = {
@@ -43,17 +37,10 @@ export default class Server {
         this.server         = createServer(this.app);
         this.middlewares();
         this.rutas = {
-            usuario  : '/usuario',
-            servicios: '/servicios',
-            perfil   : '/perfil',
-            categoria: '/categoria',
-            orden    : '/orden',
-
+            usuario: '/usuario',
+            fotos  : '/fotos',
         }
         this.routes();
-
-        this.con = new Conexion();
-        this.con.conectar();
     }
 
     private routes(): void {
@@ -63,14 +50,11 @@ export default class Server {
             console.log(`[${formateado}] HTTP | ${req.method.toUpperCase()} | ${req.url}`);
             next();
         });
-        this.app.use(this.rutas.usuario, routeUsu );
-        this.app.use(this.rutas.perfil, routePer);
-        this.app.use(this.rutas.categoria, routeCate);
-        this.app.use(this.rutas.orden, routeOrden)
+        this.app.use(this.rutas.usuario, routeUsu);
     }
 
     private middlewares(): void {
-        this.app.use("/gestion-swagger", swaggerUi.serve, swaggerUi.setup(this.swaggerSpec));
+        this.app.use("/swagger", swaggerUi.serve, swaggerUi.setup(this.swaggerSpec));
         this.app.use(express.json());
         this.app.use(cors());
     }
