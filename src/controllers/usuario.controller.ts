@@ -1,4 +1,4 @@
-import {Request, Response} from 'express';
+import {Request, Response } from 'express';
 import Usuario from '../models/usuario';
 import { Login } from '../types/login.type';
 import bcrypt from 'bcrypt';

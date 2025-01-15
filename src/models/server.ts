@@ -6,6 +6,7 @@ import swaggerJsDoc from 'swagger-jsdoc';
 
 import { createServer, Server as HttpServer } from 'http';
 import { routeUsu } from '../routes/usuario.route';
+import { routeFoto } from '../routes/foto.route';
 
 env.config({
     path: ".env"
@@ -38,7 +39,7 @@ export default class Server {
         this.middlewares();
         this.rutas = {
             usuario: '/usuario',
-            fotos  : '/fotos',
+            fotos  : '/foto',
         }
         this.routes();
     }
@@ -51,6 +52,7 @@ export default class Server {
             next();
         });
         this.app.use(this.rutas.usuario, routeUsu);
+        this.app.use(this.rutas.fotos, routeFoto);
     }
 
     private middlewares(): void {

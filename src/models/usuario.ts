@@ -1,4 +1,4 @@
-import { Collection, Db, WithId } from "mongodb";
+import { Db, WithId } from "mongodb";
 import Conexion from "../db/conexion";
 import { Login } from "../types/login.type";
 import jwt from 'jsonwebtoken';
@@ -9,10 +9,8 @@ export default class Usuario {
     
     public autenticar = async (login: Login): Promise<any> => {
         try {
-            const conexion = await Conexion.getInstancia();
+            const db: Db = await (Conexion.getInstancia()).conectar();
             
-            const db: Db = await conexion.conectar();
-
             const usuario: WithId<any> = await db.collection('usuario').find({
                 usuario: `${login.usuario}`
             }).toArray();

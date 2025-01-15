@@ -12,10 +12,9 @@ export default class Conexion {
 
     constructor() { }
 
-    public static getInstancia = async (): Promise<Conexion> => {
+    public static getInstancia = (): Conexion => {
         if (!Conexion.instancia) {
             Conexion.instancia = new Conexion;
-            await Conexion.instancia.conectar();
         }
 
         return Conexion.instancia;
