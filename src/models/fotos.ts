@@ -1,9 +1,6 @@
 import { Db, ObjectId } from "mongodb";
 import Conexion from "../db/conexion";
 import { Foto as FotoT } from "./types/foto.type";
-import path from "path";
-
-const ROOT_DIR = path.join(__dirname, "fotos")
 
 export class Foto {
     constructor() { }
@@ -27,10 +24,19 @@ export class Foto {
     }
 
     public crear = async (foto: FotoT) => {
+        
+
         try {
             const db: Db = await (Conexion.getInstancia()).conectar();
 
             const res = await db.collection<FotoT>('foto').insertOne(foto);
+
+            if (!res.insertedId) {
+                console.log('no se inserto nada.');
+                throw new Error('no se inserto nada');
+            }
+
+            
 
             return res.insertedId;
         } catch (error) {
@@ -39,6 +45,6 @@ export class Foto {
     }
     
     private static obtenerPesoArchivo = () => {
-
+        
     }
 }
