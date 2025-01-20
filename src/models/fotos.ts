@@ -24,8 +24,7 @@ export class Foto {
     }
 
     public crear = async (foto: FotoT) => {
-        
-
+    
         try {
             const db: Db = await (Conexion.getInstancia()).conectar();
 
@@ -35,8 +34,6 @@ export class Foto {
                 console.log('no se inserto nada.');
                 throw new Error('no se inserto nada');
             }
-
-            
 
             return res.insertedId;
         } catch (error) {

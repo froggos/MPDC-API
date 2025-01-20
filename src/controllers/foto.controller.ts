@@ -4,7 +4,7 @@ import { ObjectId } from "mongodb";
 import path from "path";
 import fs from 'fs';
 
-const ROOT_DIR = path.join("private", "fotos");
+const ROOT_DIR = path.join("./src", "private", "fotos");
 
 export default class FotoController {
     private foto: FotoModel;
@@ -46,12 +46,19 @@ export default class FotoController {
     }
 
     public manejarRegistrar = async (req: Request, res: Response) => {
-        const fotoBody = req.body;
+        // const fotoBody = req.body;
 
-        let realBody: {
-            clave: string;
-            valor: any;
-        }[] = [];
+        const id_usuario = req.query.id_usuario;
+        const titulo     = req.query.titulo;
+        const tipoMime   = req.query.tipoMime;
+        const nombre     = req.query.nombre;
+
+        if (id_usuario === undefined || id_usuario === null) {
+            res.status(400).json({
+                mensaje: 'no existe un id de usuario para completar la solicitud.'
+            });
+            return;
+        }
     
         const fechaRegistro: Date = new Date();
 
@@ -59,8 +66,6 @@ export default class FotoController {
         let limite = '';
 
         const contentType = req.headers['content-type'];
-
-        console.log('62: contentType: ', contentType);
 
         if (contentType && contentType.startsWith('multipart/form-data')) {
             limite = `--${contentType.split('=')[1]}`
@@ -71,46 +76,38 @@ export default class FotoController {
             return;
         }
 
-        console.log('65: limite: ', limite);
-
         req.on('data', (chunk) => {
             dataBuffer.push(chunk);
         });
 
-        // console.log('77: dataBuffer: ', dataBuffer);
+        req.on('end', async () => {
+            let carpetaEncontrada: boolean = true;
 
-        req.on('end', () => {
-            const crudo = Buffer.concat(dataBuffer).toString();
-            const partes = crudo.split(limite).filter((parte) => parte.trim() !== '--');
+            const crudo      = Buffer.concat(dataBuffer);
+            const crudoTexto = crudo.toString();
 
-            // console.log('93: crudo: ', crudo);
-            console.log('94: partes: ', partes);
+            const partes = crudoTexto.split(limite).filter((parte) => parte.trim() !== '--');
 
-            console.log('partes[1]: ', partes[1].split(' '));
+            console.log('87: partes: ', partes);
 
             for (let i = 0; i < partes.length; i++) {
                 const indexFinHeaders = partes[i].indexOf('\r\n\r\n');
                 const headers         = partes[i].slice(0, indexFinHeaders).split('\r\n');
-                const body            = partes[i].slice(indexFinHeaders + 4, -2);
 
-                console.log('91: headers: ', headers);
+                const bodyInicio      = crudoTexto.indexOf(partes[i]) + indexFinHeaders + 4;
+                const bodyFin         = crudoTexto.indexOf(`${limite}`, bodyInicio) - 2;
+                const body            = crudo.subarray(bodyInicio, bodyFin);
 
                 const disposition = headers.find((header) => {
                     return header.startsWith('Content-Disposition');
                 });
 
-                console.log('96: disposition: ', disposition);
-
                 const type = headers.find((header) => {
                     return header.startsWith('Content-Type');
                 });
 
-                console.log('102: type: ', type);
-
                 if (disposition && type) {
                     const archivo = disposition.match(/filename="(.+?)"/);
-
-                    console.log('109: archivo: ', archivo);
 
                     if (archivo) {
                         let nombreArchivo = archivo[1];
@@ -121,56 +118,51 @@ export default class FotoController {
                         
                         nombreArchivo = `${dia}-${mes}-${anio}-${nombreArchivo}`;
 
-                        const ruta = path.join(ROOT_DIR, fotoBody.id_usuario);
+                        const ruta = path.join(ROOT_DIR, id_usuario!.toString(), nombreArchivo);
 
-                        console.log('123: ruta: ', ruta)
+                        console.log('123: ruta: ', ruta);
 
-                        fs.writeFileSync(ruta, body, 'binary');
-                    }
-                }
+                        // if (!fs.existsSync(ruta)) {
+                        //     console.log('no existe la carpeta de la ruta solicitada.');
+                        //     carpetaEncontrada = false;
+                        //     break;
+                        // }
 
-                const dispositionMetaData = headers.find((header) => {
-                    return header.startsWith('Content-Disposition');
-                });
+                        try {
+                            fs.writeFileSync(ruta, body, 'binary');
 
-                if (dispositionMetaData && !partes[i].includes('Content-Type: image/')) {
-                    const claveEncontrada = dispositionMetaData.match(/name="(.+?)"/);
+                            const resp = await this.foto.crear({
+                                idUsuario: new ObjectId(id_usuario.toString()),
+                                titulo: titulo!.toString(),
+                                nombreArchivo: nombre!.toString(),
+                                tipoMime: tipoMime!.toString(),
+                                fechaRegistro,
+                                memorable: false,
+                                urlUbicacion: ruta,
+                            });
 
-                    if (claveEncontrada) {
-                        const clave = claveEncontrada[1];
-                        const valor = body.toString().trim();
-                        
-                        const bodyObj = {
-                            clave,
-                            valor,
-                        } as {
-                            clave: string;
-                            valor: any;
-                        };
+                            console.log(resp);
 
-                        realBody.push(bodyObj);
+                            res.status(200).json({
+                                mensaje: 'foto registrada.',
+                            });
+                        } catch (error) {
+                            console.log(error);
+
+                            res.status(500).json({
+                                mensaje: 'error interno del servidor.',
+                            });
+                        }
                     }
                 }
             }
-            console.log("Real body: ", realBody);
+
+            if(!carpetaEncontrada) {
+                res.status(500).json({
+                    mensaje: 'error interno del servidor.',
+                });
+                return;
+            }
         });
-
-        try {
-            const res = await this.foto.crear({
-                idUsuario: new ObjectId(fotoBody.id_usuario),
-                titulo: fotoBody.titulo,
-                tipoMime: fotoBody.tipo_mime,
-                fechaRegistro,
-                memorable: fotoBody.memorable,
-            });
-
-            console.log(res);
-        } catch (error) {
-            console.log(error);
-
-            res.status(500).json({
-                mensaje: 'error interno del servidor.',
-            });
-        }
     }
 }
